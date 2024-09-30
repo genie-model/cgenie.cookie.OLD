@@ -1,7 +1,7 @@
 #!/bin/bash -e
 #
 #####################################################################
-### SCIPT TO META-CONFIGURE AND RUN CGENIE.MUFFIN ###################
+### SCIPT TO META-CONFIGURE AND RUN CGENIE.cookie ###################
 #####################################################################
 #
 echo ""
@@ -22,7 +22,7 @@ export PATH=$PATH:/share/apps/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/share/apps/lib:/share/apps/netcdf/lib
 # also ifort ...
 export PATH=/state/partition1/apps/intel/bin:$PATH
-# ensure stack size is adequate
+# ensure stack size is adequate (could be ulimit -s unlimited ?)
 ulimit -s 20480
 #
 # (1) GET PASSED PARAMETERS
@@ -39,7 +39,7 @@ if [ -z "$2" ]; then
     echo "Usage: '$2' 2nd parameter must be the user (experiment) configuration file directory"
     exit 65
   else
-    GOINDIR=$HOMEDIR/cgenie.muffin/genie-userconfigs/"$2"
+    GOINDIR=$HOMEDIR/cgenie.cookie/genie-userconfigs/"$2"
 fi
 # [3] set run ID (input run ID (= user configuration file name))
 if [ -z "$3" ]; then
@@ -48,8 +48,8 @@ if [ -z "$3" ]; then
   else
     RUNID="$3"
 fi
-if [ $(expr length "$3") -gt 127 ] ; then
-    echo "Usage: '$3' 3rd parameter must be less than 128 characters in length"
+if [ $(expr length "$3") -gt 95 ] ; then
+    echo "Usage: '$3' 3rd parameter must be less than 96 characters in length"
     exit 65
 fi
 GOIN=$GOINDIR/$RUNID
@@ -63,8 +63,8 @@ fi
 # [5] restart path (optional)
 if [ -n "$5" ]; then
   RESTARTPATH=$OUTPUTDIR/"$5"
-    if [ $(expr length "$5") -gt 127 ] ; then
-        echo "Usage: '$5' 5th parameter must be less than 128 characters in length"
+    if [ $(expr length "$5") -gt 95 ] ; then
+        echo "Usage: '$5' 5th parameter must be less than 96 characters in length"
         exit 65
     fi
 fi
@@ -76,9 +76,9 @@ OMP_NUM_THREADS=2
 export OMP_NUM_THREADS
 #
 OUTPUTPATH=$OUTPUTDIR/$RUNID
-CONFIGPATH=$HOMEDIR/cgenie.muffin/genie-main/configs
+CONFIGPATH=$HOMEDIR/cgenie.cookie/genie-main/configs
 CONFIGNAME=$RUNID".config"
-BINARYPATH=$HOMEDIR/cgenie.muffin/genie-main
+BINARYPATH=$HOMEDIR/cgenie.cookie/genie-main
 RESTARTNAME="rst.1"
 #
 # (3) CHECK PARAMETERS
@@ -86,7 +86,14 @@ RESTARTNAME="rst.1"
 #
 echo ">> Checking parameters ..."
 #
+# NOTE: deal with ".config" being accidently included in the run command
 #
+if test -e $CONFIGPATH/$MODELID
+then
+    echo "   #0 Removing .config from base configuration name (before adding it back again later ...): "
+    echo $MODELID
+    MODELID=${MODELID::-7}
+fi
 if test -e $CONFIGPATH/$MODELID".config"
 then
     echo "   #1 Experiment base configuration: "
@@ -150,9 +157,12 @@ echo ""
 echo ">> Configuring ..."
 # Copy template config file
 cp -f $CONFIGPATH/$MODELID".config" $CONFIGPATH/$CONFIGNAME
+# add a return character just in case the base-config has no linux final line end ...
+echo '\n' >> $CONFIGPATH/$CONFIGNAME
 # Set the experiment run name
 #echo EXPID=$MODELID.$RUNID >> $CONFIGPATH/$CONFIGNAME
 echo EXPID=$RUNID >> $CONFIGPATH/$CONFIGNAME
+echo ma_expid_name=$RUNID >> $CONFIGPATH/$CONFIGNAME
 #
 # (4) SET MODEL TIME-STEPPING
 # ---------------------------
@@ -172,29 +182,29 @@ fi
 echo "   Requested model resolution: "$LONS"x"$LATS"x"$LEVS
 # define relative biogeochem time-stepping
 if [ $LONS -eq 36 ] && [ $LEVS -eq 16 ]; then
-    let N_TIMESTEPS=100
+    let N_TIMESTEPS=96
     let dbiostp=2
 elif [ $LONS -eq 36 ] && [ $LEVS -eq 8 ]; then
-    let N_TIMESTEPS=100
+    let N_TIMESTEPS=96
     let dbiostp=4
 elif [ $LONS -eq 18 ] && [ $LEVS -eq 16 ]; then
-    let N_TIMESTEPS=50
+    let N_TIMESTEPS=48
     let dbiostp=1
 elif [ $LONS -eq 18 ] && [ $LEVS -eq 8 ]; then
-    let N_TIMESTEPS=50
+    let N_TIMESTEPS=48
     let dbiostp=2
 elif [ $LONS -eq 12 ] && [ $LEVS -eq 8 ]; then
-    let N_TIMESTEPS=50
+    let N_TIMESTEPS=48
     let dbiostp=2
 elif [ $LONS -eq 36 ] && [ $LEVS -eq 32 ]; then
-    let N_TIMESTEPS=100
+    let N_TIMESTEPS=96
     let dbiostp=1
 elif [ $LONS -eq 48 ] && [ $LEVS -eq 16 ]; then
-    let N_TIMESTEPS=100
+    let N_TIMESTEPS=96
     let dbiostp=2
 else
-    let N_TIMESTEPS=100
-    let dbiostp=1
+    let N_TIMESTEPS=96
+    let dbiostp=2
 fi
 # non equal area grid options
 # NOTE: first test for option not being included in the config file
@@ -292,6 +302,7 @@ echo el_24="rst.sland" >> $CONFIGPATH/$CONFIGNAME
 # => disable netCDF restart input flag
 # => set restart input number
 # => copy restart files to data directory
+# NOTE: always disable ECOGEM restart
 if [ -n "$5" ]; then
   echo ">> Checking whether restart directory $RESTARTPATH exists ..."
   if test -d $RESTARTPATH
@@ -309,7 +320,7 @@ if [ -n "$5" ]; then
   echo bg_ctrl_continuing=t >> $CONFIGPATH/$CONFIGNAME
   echo sg_ctrl_continuing=t >> $CONFIGPATH/$CONFIGNAME
   echo rg_ctrl_continuing=t >> $CONFIGPATH/$CONFIGNAME
-  echo eg_ctrl_continuing=t >> $CONFIGPATH/$CONFIGNAME
+  echo eg_ctrl_continuing=f >> $CONFIGPATH/$CONFIGNAME
   echo ea_30=n >> $CONFIGPATH/$CONFIGNAME
   echo go_18=n >> $CONFIGPATH/$CONFIGNAME
   echo gs_13=n >> $CONFIGPATH/$CONFIGNAME
