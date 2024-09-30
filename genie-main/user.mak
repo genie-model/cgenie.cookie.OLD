@@ -23,9 +23,9 @@
 # ====================================================================
 
 ## === Compre the values below to those in user.sh ===
-GENIE_ROOT        = $(HOME)/cgenie.muffin
+GENIE_ROOT        = $(HOME)/cgenie.cookie
 OUT_DIR           = $(HOME)/cgenie_output
-RUNTIME_ROOT      = ../../cgenie.muffin
+RUNTIME_ROOT      = ../../cgenie.cookie
 
 # === Fortran compiler (ifc/ifort/f90/pgf90) ===
 F77=gfortran
@@ -84,3 +84,4 @@ NETCDF_DIR=/usr/local
 #NETCDF_DIR=/usr/local/Cellar/netcdf/4.9.2_1
 
 NETCDF_NAME=netcdf
+
