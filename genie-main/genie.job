@@ -101,7 +101,7 @@ runtests () {
 	DIFF_OPTS="-v -a 6e-15 -r 2"
     elif [ $COMPARE_AGAINST_KNOWNGOOD = "TRUE" ] ; then
 	REF_DIR=$CODEDIR/genie-knowngood/$KNOWNGOOD_NAME
-	DIFF_OPTS="-v -a 6e-15 -r35"
+	DIFF_OPTS="-v -a 6e-15 -r 35"
     # nothing to be done for preservation checks in setup
     else
 	echo "ERROR: must choose to compare against assumedgoods, knowngoods or preserve fluxes"
